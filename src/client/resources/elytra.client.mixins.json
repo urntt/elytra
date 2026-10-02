@@ -1,0 +1,17 @@
+{
+	"required": true,
+	"package": "com.urntt.elytra.mixin",
+	"compatibilityLevel": "JAVA_${java_version}",
+	"client": [
+		"EntityInvoker",
+		"LivingEntityMixin",
+		"LocalPlayerMixin",
+		"PlayerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "elytra-gametest",
+	"version": "0.0.0",
+	"name": "elytra game tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"com.urntt.elytra.gametest.ElytraLogicGameTest",
+			"com.urntt.elytra.gametest.ElytraGlideGameTest",
+			"com.urntt.elytra.gametest.ElytraFlightGameTest",
+			"com.urntt.elytra.gametest.ElytraEquipmentGameTest",
+			"com.urntt.elytra.gametest.ElytraMultiplayerGameTest"
+		]
+	},
+	"depends": {
+		"elytra": "*"
+	}
+}

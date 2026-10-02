@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "elytra",
+	"version": "${version}",
+	"name": "elytra",
+	"description": "Gives the player more control over elytra flight.",
+	"authors": [
+		"urntt"
+	],
+	"contact": {
+		"homepage": "https://github.com/urntt/elytra",
+		"sources": "https://github.com/urntt/elytra",
+		"issues": "https://github.com/urntt/elytra/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/elytra/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.urntt.elytra.ElytraClient"
+		],
+		"modmenu": [
+			"com.urntt.elytra.compat.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "elytra.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=${java_version}",
+		"fabric-api": ">=${fabric_api_version}"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
