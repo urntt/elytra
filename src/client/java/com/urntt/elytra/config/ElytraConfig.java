@@ -72,7 +72,60 @@ public final class ElytraConfig {
 		return config;
 	}
 
-	/** Whether the player turned {@code feature} on. The multiplayer rules decide whether it is active. */
+	/**
+	 * The main switch, as toggled by its key binding: whether the features turned on are active now. The multiplayer
+	 * rules still decide whether the mod may act in the current scene.
+	 */
+	public boolean isEnabled() {
+		return this.settings.enabled;
+	}
+
+	public void setEnabled(final boolean enabled) {
+		this.settings.enabled = enabled;
+		this.save();
+	}
+
+	/** The state of the main switch a reset restores in singleplayer worlds. */
+	public boolean singleplayerDefault() {
+		return this.settings.singleplayerDefault;
+	}
+
+	public void setSingleplayerDefault(final boolean singleplayerDefault) {
+		this.settings.singleplayerDefault = singleplayerDefault;
+		this.save();
+	}
+
+	/** The state of the main switch a reset restores on multiplayer servers that the multiplayer mode allows. */
+	public boolean multiplayerDefault() {
+		return this.settings.multiplayerDefault;
+	}
+
+	public void setMultiplayerDefault(final boolean multiplayerDefault) {
+		this.settings.multiplayerDefault = multiplayerDefault;
+		this.save();
+	}
+
+	/** Whether every world starts with the main switch in its default state. */
+	public boolean resetOnWorldExit() {
+		return this.settings.resetOnWorldExit;
+	}
+
+	public void setResetOnWorldExit(final boolean resetOnWorldExit) {
+		this.settings.resetOnWorldExit = resetOnWorldExit;
+		this.save();
+	}
+
+	/** Whether the first world after starting the game starts with the main switch in its default state. */
+	public boolean resetOnGameExit() {
+		return this.settings.resetOnGameExit;
+	}
+
+	public void setResetOnGameExit(final boolean resetOnGameExit) {
+		this.settings.resetOnGameExit = resetOnGameExit;
+		this.save();
+	}
+
+	/** Whether the player turned {@code feature} on. The main switch and the multiplayer rules decide whether it acts. */
 	public boolean isEnabled(final Feature feature) {
 		return this.settings.features.get(feature.id());
 	}
@@ -141,10 +194,15 @@ public final class ElytraConfig {
 	}
 
 	/**
-	 * The serialized form. Defaults come from {@link Feature} and {@link Tuning} and from the field initializers, and
-	 * also apply to keys missing from the file.
+	 * The serialized form. Features are off by default, numeric settings default to {@link Tuning#defaultValue()},
+	 * and the other defaults are the field initializers. Defaults also apply to keys missing from the file.
 	 */
 	private static final class Settings {
+		private boolean enabled = true;
+		private boolean singleplayerDefault = true;
+		private boolean multiplayerDefault = true;
+		private boolean resetOnWorldExit = false;
+		private boolean resetOnGameExit = false;
 		private Map<String, Boolean> features = new LinkedHashMap<>();
 		private Map<String, Double> tuning = new LinkedHashMap<>();
 		private boolean chestSwapOnJump = true;
@@ -162,7 +220,7 @@ public final class ElytraConfig {
 				Boolean enabled = this.features != null ? this.features.get(feature.id()) : null;
 				boolean contradicted = Arrays.stream(Feature.values())
 						.anyMatch(other -> other.conflictsWith(feature) && Boolean.TRUE.equals(features.get(other.id())));
-				features.put(feature.id(), (enabled != null ? enabled : feature.enabledByDefault()) && !contradicted);
+				features.put(feature.id(), Boolean.TRUE.equals(enabled) && !contradicted);
 			}
 			this.features = features;
 

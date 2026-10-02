@@ -28,8 +28,8 @@ public enum Tuning {
 	PARTIALLY_CONTROLLED_MAX_SPEED("partially_controlled.max_speed", Feature.PARTIALLY_CONTROLLED, Unit.BLOCKS_PER_TICK,
 			3.0, 0.5, 10.0, 0.1),
 	ELYTRA_REPLACE_MIN_DURABILITY("elytra_replace.min_durability", Feature.ELYTRA_REPLACE, Unit.DURABILITY,
-			10, 1, 100, 1),
-	ELYTRA_BOOST_DURATION("elytra_boost.duration", Feature.ELYTRA_BOOST, Unit.TICKS, 30, 1, 200, 1);
+			1, 1, 100, 1),
+	ELYTRA_BOOST_DURATION("elytra_boost.duration", Feature.ELYTRA_BOOST, Unit.TICKS, 20, 1, 200, 1);
 
 	public enum Unit {
 		BLOCKS_PER_TICK,

@@ -4,25 +4,23 @@ import java.util.Optional;
 import net.minecraft.network.chat.Component;
 
 /**
- * The features the player can turn on and off individually, each with its own toggle key.
- *
- * <p>Features that act on their own are off by default. Features that only act when their own key is pressed (and
- * those keys are unbound by default) are on by default.
+ * The features the player can turn on and off individually, each with its own toggle key. All features are off by
+ * default, and the mod's main switch ({@code ElytraConfig.isEnabled()}) gates all of them at once.
  */
 public enum Feature {
-	FAKE_ELYTRA("fake_elytra", false, Group.GLIDE_PERMISSION),
-	NO_GLIDING("no_gliding", false, Group.GLIDE_PERMISSION),
-	GROUND_GLIDE("ground_glide", false, null),
-	INSTANT_FLY("instant_fly", false, null),
-	STOP_IN_WATER("stop_in_water", false, null),
-	FULLY_CONTROLLED("fully_controlled", false, Group.FLIGHT_CONTROL),
-	PARTIALLY_CONTROLLED("partially_controlled", false, Group.FLIGHT_CONTROL),
-	NO_CRASH("no_crash", false, null),
-	AUTOPILOT("autopilot", false, Group.FLIGHT_CONTROL),
-	ELYTRA_REPLACE("elytra_replace", false, null),
-	CHEST_SWAP("chest_swap", false, null),
-	ELYTRA_BOOST("elytra_boost", true, null),
-	INSTA_STOP("insta_stop", true, null);
+	FAKE_ELYTRA("fake_elytra", Group.GLIDE_PERMISSION),
+	NO_GLIDING("no_gliding", Group.GLIDE_PERMISSION),
+	GROUND_GLIDE("ground_glide", null),
+	INSTANT_FLY("instant_fly", null),
+	STOP_IN_WATER("stop_in_water", null),
+	FULLY_CONTROLLED("fully_controlled", Group.FLIGHT_CONTROL),
+	PARTIALLY_CONTROLLED("partially_controlled", Group.FLIGHT_CONTROL),
+	NO_CRASH("no_crash", null),
+	AUTOPILOT("autopilot", Group.FLIGHT_CONTROL),
+	ELYTRA_REPLACE("elytra_replace", null),
+	CHEST_SWAP("chest_swap", null),
+	ELYTRA_BOOST("elytra_boost", null),
+	INSTA_STOP("insta_stop", null);
 
 	/**
 	 * Features that contradict each other. Turning one on turns the others in its group off.
@@ -35,22 +33,16 @@ public enum Feature {
 	}
 
 	private final String id;
-	private final boolean enabledByDefault;
 	private final Optional<Group> group;
 
-	Feature(final String id, final boolean enabledByDefault, final Group group) {
+	Feature(final String id, final Group group) {
 		this.id = id;
-		this.enabledByDefault = enabledByDefault;
 		this.group = Optional.ofNullable(group);
 	}
 
 	/** The name used in the configuration file and in translation keys. */
 	public String id() {
 		return this.id;
-	}
-
-	public boolean enabledByDefault() {
-		return this.enabledByDefault;
 	}
 
 	public Optional<Group> group() {

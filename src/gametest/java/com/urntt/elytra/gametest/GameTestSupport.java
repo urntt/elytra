@@ -33,12 +33,17 @@ final class GameTestSupport {
 	}
 
 	/**
-	 * Turns exactly the given features on, and restores every other setting to its default, so each check starts
-	 * from a known configuration.
+	 * Turns the main switch and exactly the given features on, and restores every other setting to its default, so
+	 * each check starts from a known configuration.
 	 */
 	static void onlyEnable(final ClientGameTestContext context, final Feature... enabled) {
 		Set<Feature> features = Set.of(enabled);
 		configure(context, config -> {
+			config.setEnabled(true);
+			config.setSingleplayerDefault(true);
+			config.setMultiplayerDefault(true);
+			config.setResetOnWorldExit(false);
+			config.setResetOnGameExit(false);
 			for (Feature feature : Feature.values()) {
 				config.setEnabled(feature, features.contains(feature));
 			}

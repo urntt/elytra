@@ -44,6 +44,19 @@ public final class ElytraConfigScreen extends OptionsSubScreen {
 		ElytraConfig config = ElytraClient.config();
 		this.featureOptions.clear();
 
+		this.list.addHeader(Component.translatable("options.elytra.section.current"));
+		this.list.addBig(toggle(ElytraClient.MAIN_SWITCH_NAME_KEY, config.isEnabled(), config::setEnabled));
+
+		this.list.addHeader(Component.translatable("options.elytra.section.defaults"));
+		this.list.addSmall(
+				toggle("options.elytra.singleplayer_default", config.singleplayerDefault(), config::setSingleplayerDefault),
+				toggle("options.elytra.multiplayer_default", config.multiplayerDefault(), config::setMultiplayerDefault));
+
+		this.list.addHeader(Component.translatable("options.elytra.section.reset"));
+		this.list.addSmall(
+				toggle("options.elytra.reset_on_world_exit", config.resetOnWorldExit(), config::setResetOnWorldExit),
+				toggle("options.elytra.reset_on_game_exit", config.resetOnGameExit(), config::setResetOnGameExit));
+
 		this.list.addHeader(Component.translatable("options.elytra.section.gliding"));
 		this.addFeatures(Feature.FAKE_ELYTRA, Feature.NO_GLIDING, Feature.GROUND_GLIDE, Feature.INSTANT_FLY,
 				Feature.STOP_IN_WATER, Feature.INSTA_STOP);

@@ -54,7 +54,7 @@ public final class ElytraMultiplayerGameTest implements FabricClientGameTest {
 			checkInstantFly(context, lab, false, "on a blacklisted server");
 		}
 
-		onlyEnable(context, Feature.ELYTRA_BOOST, Feature.INSTA_STOP);
+		onlyEnable(context);
 		unbindKey(context, toggleKey);
 	}
 

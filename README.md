@@ -1,6 +1,6 @@
 # elytra
 
-A client-side Fabric mod for Minecraft: Java Edition that gives you more control over elytra flight. Each feature can be turned on and off on its own, from the configuration screen or with its own key. Only your own player is affected.
+A client-side Fabric mod for Minecraft: Java Edition that gives you more control over elytra flight. Each feature can be turned on and off on its own, from the configuration screen or with its own key, and a main switch turns all of them on or off at once. Only your own player is affected.
 
 ## Multiplayer warning
 
@@ -35,14 +35,18 @@ Some features are worth knowing about in particular:
 | Partially Controlled Flying | Off | Keep vanilla gliding, but forward speeds you up along your facing, back slows you down, jump pushes you up, and sneak pushes you down. The amounts, the natural descent, the natural acceleration, and a maximum speed are adjustable. |
 | No Crash | Off | Looks ahead along your velocity and slows you down before you fly into a wall or into a chunk that has not loaded yet, stopping just in front of it. Floors do not count, so you can still land. |
 | Autopilot | Off | Flies on forever by diving and climbing in turns, which gains height over time. It only changes your pitch; you still steer left and right. Starting slowly, it first dives up to about 55 blocks to gain speed. |
-| Elytra Replace | Off | Swaps in a spare elytra from your inventory when the worn one has the minimum durability (10 by default) or less left. |
+| Elytra Replace | Off | Swaps in a spare elytra from your inventory when the worn one has the minimum durability (1 by default) or less left. An elytra with 1 durability left can no longer glide, so with the default your glide ends just before the swap; set the minimum to 2 or more to swap without interrupting the glide. |
 | Chest Swap | Off | When you try to glide in a chestplate with an elytra in your inventory, puts the elytra on and starts the glide. Puts the chestplate back on when that glide ends. Both steps can be turned off. Also enables the swap key. |
-| Elytra Boost | On | While gliding, the boost key pushes you like a firework rocket, without using one. The boost lasts 30 ticks (1.5 seconds) by default. |
-| Insta Stop | On | The stop key ends your glide at once. |
+| Elytra Boost | Off | While gliding, the boost key pushes you like a firework rocket, without using one. The boost lasts 20 ticks (1 second) by default. |
+| Insta Stop | Off | The stop key ends your glide at once. |
 
 Fake Elytra and No Gliding contradict each other, and so do Fully Controlled Flying, Partially Controlled Flying, and Autopilot: turning one on turns the others in its group off.
 
-Elytra Boost and Insta Stop only act through their own keys, which are unbound by default, so they are on by default. All other features change how the game behaves on their own and are off by default.
+All features are off by default.
+
+### Main switch
+
+The main switch, named **elytra** on the configuration screen, decides whether the features you turned on are active. Turning it off pauses all of them without changing which ones are turned on. Like [nojumpdelay](https://github.com/urntt/nojumpdelay)'s single switch, it has a default for singleplayer worlds and one for servers, and it can return to the default whenever you join a world or the first time after restarting the game. It is on by default, so turning a feature on is enough to use it.
 
 ### How the features work with the server
 
@@ -56,7 +60,9 @@ Elytra Boost and Insta Stop only act through their own keys, which are unbound b
 
 The mod adds these key bindings in **Options → Controls → Key Binds**, all unbound by default:
 
-- **Toggle &lt;feature&gt;** for each feature turns it on or off and shows the new state on the action bar. On a server that the multiplayer settings rule out, it only shows that the mod is disabled there.
+- **Toggle elytra** turns the main switch on or off and shows the new state on the action bar.
+- **Toggle &lt;feature&gt;** for each feature turns it on or off and shows the new state on the action bar. If the main switch is off, the message says so.
+- On a server that the multiplayer settings rule out, all toggle keys only show that the mod is disabled there.
 - **Elytra Boost**, **Insta Stop**, and **Swap Elytra and Chestplate** perform those actions while their features are on.
 - **Open elytra Settings** opens the configuration screen. With Mod Menu installed, you can also open it from the mod list.
 
@@ -66,6 +72,12 @@ All settings are saved to `config/elytra.json` as soon as you change them. Speed
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
+| elytra | On | The main switch, the same one the Toggle elytra key switches. |
+| Singleplayer Default | On | The state a reset restores to the main switch in singleplayer worlds, including worlds you open to LAN. |
+| Server Default | On | The state a reset restores to the main switch on servers that the multiplayer mode allows. |
+| Reset on World Exit | Off | Every world starts with the main switch in its default state instead of keeping the last state. |
+| Reset on Game Exit | Off | After restarting the game, the first world where the mod is allowed starts with the main switch in its default state. |
+| Each feature | Off | Whether the feature is turned on, the same setting its toggle key switches. |
 | Fully Controlled Flying: Horizontal Speed | 1.00 | Speed while a movement key is held. |
 | Fully Controlled Flying: Vertical Speed | 0.50 | Speed while jump or sneak is held. |
 | Partially Controlled Flying: Acceleration | 0.05 | Speed added each tick along your facing while forward is held, and taken away while back is held. |
@@ -74,14 +86,14 @@ All settings are saved to `config/elytra.json` as soon as you change them. Speed
 | Partially Controlled Flying: Natural Descent | 100% | How strongly gravity pulls the glide down. |
 | Partially Controlled Flying: Natural Acceleration | 100% | How quickly the glide turns height into forward speed. |
 | Partially Controlled Flying: Max Speed | 3.00 | The glide never goes faster than this. |
-| Elytra Boost: Duration | 30 ticks | How long each boost pushes. |
-| Elytra Replace: Min Durability | 10 | Swap when the worn elytra has this much durability left or less. |
+| Elytra Boost: Duration | 20 ticks | How long each boost pushes. |
+| Elytra Replace: Min Durability | 1 | Swap when the worn elytra has this much durability left or less. |
 | Chest Swap: Swap on Jump | On | Put on an elytra when you try to glide without one. |
 | Chest Swap: Swap Back | On | Put the chestplate back on when a glide that Chest Swap started ends. |
 | Multiplayer mode | Disabled | **Disabled**: never active on servers. **Whitelist**: active only on servers in the server list. **Blacklist**: active on all servers except those in the server list. |
 | Server List | Empty | The addresses the whitelist and blacklist modes use. |
 
-The multiplayer mode is a hard limit: on a server it rules out, every feature stays off, whatever its own setting. Joining another player's LAN world or a Realm counts as multiplayer.
+The multiplayer mode is a hard limit: on a server it rules out, every feature stays off, whatever the main switch and the feature's own setting say. Joining another player's LAN world or a Realm counts as multiplayer.
 
 Server list entries are compared with the address you connect to, ignoring upper and lower case. An entry without a port, such as `mc.example.com`, matches the server on any port, while an entry with a port, such as `mc.example.com:25566`, matches only that port. The server list screen marks invalid addresses in red and does not save until they are fixed or removed.
 
@@ -97,7 +109,7 @@ Build the mod:
 
 The jar is written to `build/libs/`.
 
-Run the client game tests, which start Minecraft and measure every feature against vanilla in singleplayer worlds and on a local dedicated server, along with the key bindings, the multiplayer modes, and the saved configuration:
+Run the client game tests, which start Minecraft and measure every feature against vanilla in singleplayer worlds and on a local dedicated server, along with the key bindings, the main switch and its reset rules, the multiplayer modes, and the saved configuration:
 
 ```bash
 ./gradlew runClientGameTest

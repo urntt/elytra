@@ -43,12 +43,11 @@ The mod version itself follows [Semantic Versioning](https://semver.org/); the `
 - Client-only: `fabric.mod.json` declares `"environment": "client"`. There is no server-side component and no networking beyond the vanilla packets a player sends anyway (the "start fall flying" command and inventory clicks).
 - The mod does not try to bypass or hide from anti-cheat systems. Do not add packet spoofing (for example faking `onGround` to avoid fall damage), movement disguises, or anything else whose purpose is to get past server checks.
 - Only the local player (`LocalPlayer`) is affected. Every other entity, including other players and the integrated server's copy of the local player, keeps vanilla behavior.
-- The features are listed in `Feature`. Each has its own toggle key binding, unbound by default; each toggle shows the new state on the action bar and saves it.
-- Features that act on their own are off by default. Features that only act through their own key (Elytra Boost, Insta Stop) are on by default, because their keys are unbound by default.
+- The features are listed in `Feature`. Each has its own toggle key binding, unbound by default; each toggle shows the new state on the action bar and saves it. All features are off by default.
+- A main switch gates all features at once, as one setting for all of them. It follows nojumpdelay's single toggle: it is on by default and has its own toggle key binding (unbound by default), a singleplayer default and a server default (both on), and the reset rules "reset on world exit" and "reset on game exit" (both off). A reset restores the scene's default when the player joins an allowed scene, never on exit, so it uses the next scene's default and still works after a crash. Resets change only the main switch, never the features' own states.
 - Contradicting features are grouped in `Feature.Group`: turning one on turns the others in its group off (Fake Elytra and No Gliding; Fully Controlled Flying, Partially Controlled Flying, and Autopilot).
-- `FeatureController` is the single owner of whether a feature is active: it is turned on and the current scene (singleplayer or a multiplayer server, determined on join) is allowed.
-- The multiplayer mode is a hard limit: `DISABLED` (the default) rules out every server, `WHITELIST` allows only servers in the server list, and `BLACKLIST` allows every server except those in it. On a ruled-out server every feature stays off and the keys only report that the mod is disabled there. Joining another player's LAN world or a Realm counts as multiplayer. Server list entries match like nojumpdelay's: by host (case-insensitive, after IDN conversion, valid domain name or IP address) and by port only when the entry specifies one.
-- nojumpdelay's separate singleplayer and server defaults and its reset rules are not part of this mod; the per-feature toggle states simply persist.
+- `FeatureController` is the single owner of whether a feature is active: the main switch and the feature are on, and the current scene (singleplayer or a multiplayer server, determined on join) is allowed. It also applies the reset rules.
+- The multiplayer mode is a hard limit: `DISABLED` (the default) rules out every server, `WHITELIST` allows only servers in the server list, and `BLACKLIST` allows every server except those in it. On a ruled-out server every feature stays off whatever the main switch says, and the keys only report that the mod is disabled there. Joining another player's LAN world or a Realm counts as multiplayer. Server list entries match like nojumpdelay's: by host (case-insensitive, after IDN conversion, valid domain name or IP address) and by port only when the entry specifies one.
 - `GlideController` owns gliding on top of the server's fall flying flag. Fake Elytra and Ground Glide keep a client-side glide that the server does not know about; everything else starts and stops glides with the vanilla "start fall flying" command, which the server answers by starting a glide or by stopping one in progress. With a usable elytra, a client-side glide is handed back to the server once the player is airborne again.
 - Elytra Boost spawns firework rockets on the client only, with negative entity IDs, and removes them after the configured duration.
 - Chest Swap and Elytra Replace move items only with ordinary clicks in the player's own inventory menu, never while another container is open or an item is on the cursor.
@@ -77,10 +76,10 @@ The mod version itself follows [Semantic Versioning](https://semver.org/); the `
 ### Testing
 
 - The client game tests in `src/gametest` start Minecraft and measure every feature against vanilla in the same setup:
-  - `ElytraLogicGameTest`: defaults, the configuration file, slider values, contradicting features, the multiplayer rules, and address matching.
-  - `ElytraGlideGameTest`: toggle keys, Instant Fly, Insta Stop, No Gliding, Fake Elytra, Ground Glide, Stop Flying in Water, and screenshots of the settings screens.
+  - `ElytraLogicGameTest`: defaults, the configuration file, slider values, contradicting features, the main switch, the multiplayer rules, the reset rules (including "reset on game exit", which needs a fresh controller), and address matching.
+  - `ElytraGlideGameTest`: toggle keys, the main switch and its reset on world exit, Instant Fly, Insta Stop, No Gliding, Fake Elytra, Ground Glide, Stop Flying in Water, and screenshots of the settings screens.
   - `ElytraFlightGameTest`: Fully and Partially Controlled Flying, No Crash at a wall and at an unloaded chunk, Elytra Boost, and Autopilot.
-  - `ElytraEquipmentGameTest`: Elytra Replace and Chest Swap, on the client and on the server.
+  - `ElytraEquipmentGameTest`: Elytra Replace (including during a glide) and Chest Swap, on the client and on the server.
   - `ElytraMultiplayerGameTest`: each multiplayer mode on a local dedicated server.
 - Keep them passing and extend them when behavior changes.
 - The dedicated server needs `eula = true` in the `configureTests` block of `build.gradle`; it accepts the Minecraft EULA only for that local test server.

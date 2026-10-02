@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -22,8 +23,8 @@ import net.minecraft.world.item.Items;
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class ElytraEquipmentGameTest implements FabricClientGameTest {
-	/** Damage of an elytra with 5 durability left (an elytra has 432). */
-	private static final int WORN_OUT_DAMAGE = 427;
+	/** Marks the spare elytra in the check that should not swap it in. */
+	private static final int SPARE_REPAIR_COST = 5;
 	private static final String CHESTPLATE = "minecraft:diamond_chestplate";
 
 	@Override
@@ -33,20 +34,23 @@ public final class ElytraEquipmentGameTest implements FabricClientGameTest {
 			FlightLab lab = new FlightLab(context, singleplayer.getServer());
 
 			checkElytraReplace(context, lab);
+			checkElytraReplaceDuringGlide(context, lab);
 			checkChestSwapOnJump(context, lab);
 			checkChestSwapKey(context, lab);
 		}
-		onlyEnable(context, Feature.ELYTRA_BOOST, Feature.INSTA_STOP);
+		onlyEnable(context);
 	}
 
 	private static void checkElytraReplace(final ClientGameTestContext context, final FlightLab lab) {
-		check(new ItemStack(Items.ELYTRA).getMaxDamage() - WORN_OUT_DAMAGE <= Tuning.ELYTRA_REPLACE_MIN_DURABILITY.defaultValue(),
-				"the test elytra should be at or below the default minimum durability");
+		int maxDamage = new ItemStack(Items.ELYTRA).getMaxDamage();
+		int minDurability = (int) Tuning.ELYTRA_REPLACE_MIN_DURABILITY.defaultValue();
+		// Exactly the default minimum left, which already counts as worn out.
+		int wornOutDamage = maxDamage - minDurability;
 		onlyEnable(context);
 		lab.resetPlayer(0, 0);
-		lab.wear("minecraft:elytra[minecraft:damage=" + WORN_OUT_DAMAGE + "]");
+		lab.wear("minecraft:elytra[minecraft:damage=" + wornOutDamage + "]");
 		lab.give("minecraft:elytra");
-		check(lab.holdsFor(10, client -> FlightLab.chest(client).getDamageValue() == WORN_OUT_DAMAGE),
+		check(lab.holdsFor(10, client -> FlightLab.chest(client).getDamageValue() == wornOutDamage),
 				"without Elytra Replace the worn-out elytra should stay on");
 
 		onlyEnable(context, Feature.ELYTRA_REPLACE);
@@ -57,15 +61,42 @@ public final class ElytraEquipmentGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		ItemStack serverChest = lab.serverChestItem();
 		check(serverChest.is(Items.ELYTRA) && serverChest.getDamageValue() == 0, "the server should see the spare elytra worn");
-		check(lab.client(client -> client.player.getInventory().contains(stack -> stack.getDamageValue() == WORN_OUT_DAMAGE)),
+		check(lab.client(client -> client.player.getInventory().contains(stack -> stack.getDamageValue() == wornOutDamage)),
 				"the worn-out elytra should be in the inventory");
 
-		// A spare that is itself below the minimum is not worth swapping in.
+		// A spare that is not above the minimum either is not worth swapping in. A repair cost tells the two apart.
 		lab.resetPlayer(0, 0);
-		lab.wear("minecraft:elytra[minecraft:damage=" + WORN_OUT_DAMAGE + "]");
-		lab.give("minecraft:elytra[minecraft:damage=" + (WORN_OUT_DAMAGE + 1) + "]");
-		check(lab.holdsFor(10, client -> FlightLab.chest(client).getDamageValue() == WORN_OUT_DAMAGE),
+		lab.wear("minecraft:elytra[minecraft:damage=" + wornOutDamage + "]");
+		lab.give("minecraft:elytra[minecraft:damage=" + wornOutDamage + ",minecraft:repair_cost=" + SPARE_REPAIR_COST + "]");
+		check(lab.holdsFor(10, client -> FlightLab.chest(client).getOrDefault(DataComponents.REPAIR_COST, 0) != SPARE_REPAIR_COST),
 				"Elytra Replace should not swap in a spare that is worn out too");
+	}
+
+	/**
+	 * Lets an elytra wear down during a glide. An elytra with 1 durability left can no longer glide, so with a minimum
+	 * of 1 the server ends the glide before the spare goes on, while with a minimum of 2 the swap keeps the glide going.
+	 * The README and the setting's tooltip describe this.
+	 */
+	private static void checkElytraReplaceDuringGlide(final ClientGameTestContext context, final FlightLab lab) {
+		int maxDamage = new ItemStack(Items.ELYTRA).getMaxDamage();
+		for (int minDurability : new int[] {1, 2}) {
+			onlyEnable(context, Feature.ELYTRA_REPLACE);
+			configure(context, config -> config.set(Tuning.ELYTRA_REPLACE_MIN_DURABILITY, minDurability));
+			lab.resetPlayer(0, 0);
+			// One durability above the minimum, so the swap happens when the glide wears it down.
+			lab.wear("minecraft:elytra[minecraft:damage=" + (maxDamage - minDurability - 1) + "]");
+			lab.give("minecraft:elytra");
+			lab.launchGlide(0, 60, 0, 0.0F, 0.0F);
+			int ticks = lab.ticksUntil(FlightLab.LONG_TIMEOUT, client -> FlightLab.chest(client).getDamageValue() == 0);
+			check(ticks >= 0, "Elytra Replace should swap in the spare when the glide wears the elytra down");
+			context.waitTicks(5);
+			boolean gliding = lab.gliding();
+			LOGGER.info("Elytra Replace with a minimum of {} swapped {} ticks into the glide; still gliding: {}",
+					minDurability, ticks, gliding);
+			check(gliding == (minDurability > 1), minDurability > 1
+					? "a minimum of 2 should swap without ending the glide"
+					: "an elytra worn down to 1 durability should end the glide");
+		}
 	}
 
 	/**

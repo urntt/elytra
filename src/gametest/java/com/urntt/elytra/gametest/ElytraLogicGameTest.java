@@ -19,8 +19,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 
 /**
- * Checks the defaults, the configuration file, the slider values, the contradicting features, the multiplayer
- * rules, and the address matching without a world. It runs first, so it also sees the configuration of a fresh
+ * Checks the defaults, the configuration file, the slider values, the contradicting features, the main switch, the
+ * multiplayer rules, the reset rules, and the address matching without a world. It runs first, so it also sees the configuration of a fresh
  * installation. The other checks use their own configuration files, so the game's configuration is left alone.
  */
 @SuppressWarnings("UnstableApiUsage")
@@ -40,18 +40,24 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 		checkNormalization(directory);
 		checkTuningSteps();
 		checkContradictingFeatures(directory);
+		checkMainSwitch(directory);
 		checkMultiplayerRules(directory);
+		checkResetRules(directory);
 		checkAddressMatching();
 		GameTestSupport.LOGGER.info("Logic checks passed");
 	}
 
 	private static void checkDefaults(final ElytraConfig config) {
 		for (Feature feature : Feature.values()) {
-			boolean expected = feature == Feature.ELYTRA_BOOST || feature == Feature.INSTA_STOP;
-			check(config.isEnabled(feature) == expected, feature + " should be " + (expected ? "on" : "off") + " by default");
+			check(!config.isEnabled(feature), feature + " should be off by default");
 		}
+		check(config.isEnabled(), "the main switch should be on by default");
+		check(config.singleplayerDefault() && config.multiplayerDefault(), "both defaults of the main switch should be on");
+		check(!config.resetOnWorldExit() && !config.resetOnGameExit(), "the reset rules should be off by default");
 		check(config.get(Tuning.PARTIALLY_CONTROLLED_ASCEND_ACCELERATION) == 0.08, "jump should add 0.08 by default");
 		check(config.get(Tuning.PARTIALLY_CONTROLLED_DESCEND_ACCELERATION) == 0.04, "sneak should take 0.04 by default");
+		check(config.get(Tuning.ELYTRA_REPLACE_MIN_DURABILITY) == 1.0, "Elytra Replace should swap at 1 durability by default");
+		check(config.get(Tuning.ELYTRA_BOOST_DURATION) == 20.0, "a boost should last 20 ticks by default");
 		for (Tuning tuning : Tuning.values()) {
 			check(config.get(tuning) == tuning.defaultValue(), tuning + " should start at its default");
 		}
@@ -64,8 +70,9 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 		Path path = directory.resolve("normalize.json");
 		write(path, """
 				{
+					"enabled": false,
 					"features": {"fake_elytra": true, "no_gliding": true, "autopilot": true, "fully_controlled": true,
-						"insta_stop": false, "removed_feature": true},
+						"insta_stop": true, "removed_feature": true},
 					"tuning": {"fully_controlled.horizontal_speed": 99.0, "partially_controlled.ascend_acceleration": 0.083,
 						"elytra_boost.duration": -5},
 					"multiplayerMode": "bogus",
@@ -77,8 +84,8 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 				"of two contradicting features only the first should stay on");
 		check(config.isEnabled(Feature.FULLY_CONTROLLED) && !config.isEnabled(Feature.AUTOPILOT),
 				"of two flight controls only the first should stay on");
-		check(!config.isEnabled(Feature.INSTA_STOP), "saved settings should be kept");
-		check(config.isEnabled(Feature.ELYTRA_BOOST), "missing features should get their default");
+		check(config.isEnabled(Feature.INSTA_STOP) && !config.isEnabled(), "saved settings should be kept");
+		check(!config.isEnabled(Feature.ELYTRA_BOOST), "missing features should be off");
 		check(config.get(Tuning.FULLY_CONTROLLED_HORIZONTAL_SPEED) == 5.0, "values above the range should be clamped");
 		check(config.get(Tuning.PARTIALLY_CONTROLLED_ASCEND_ACCELERATION) == 0.08, "values should be rounded to a step");
 		check(config.get(Tuning.ELYTRA_BOOST_DURATION) == 1.0, "values below the range should be clamped");
@@ -86,11 +93,12 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 		check(config.servers().equals(List.of("a.example.com")), "entries should be trimmed and blanks dropped");
 		String saved = read(path);
 		check(!saved.contains("removed_feature"), "unknown features should be dropped from the file");
-		check(saved.contains("\"chestSwapBack\"") && saved.contains("\"elytra_replace.min_durability\""),
+		check(saved.contains("\"chestSwapBack\"") && saved.contains("\"resetOnGameExit\"")
+						&& saved.contains("\"elytra_replace.min_durability\""),
 				"missing settings should be written to the file");
 
 		write(path, "{ not json");
-		check(ElytraConfig.load(path).isEnabled(Feature.ELYTRA_BOOST), "an unreadable file should fall back to defaults");
+		check(ElytraConfig.load(path).isEnabled(), "an unreadable file should fall back to defaults");
 		check(read(path).equals("{ not json"), "an unreadable file should be left untouched");
 	}
 
@@ -124,10 +132,28 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 				"the states should match what was set");
 	}
 
+	/**
+	 * The main switch gates every feature without changing the features' own states.
+	 */
+	private static void checkMainSwitch(final Path directory) {
+		ElytraConfig config = ElytraConfig.load(directory.resolve("main-switch.json"));
+		FeatureController controller = new FeatureController(config);
+		controller.onJoin(Scene.SINGLEPLAYER);
+		controller.setEnabled(Feature.INSTANT_FLY, true);
+		check(controller.isActive(Feature.INSTANT_FLY), "a feature should act while the main switch is on");
+
+		check(controller.toggle().outcome() == FeatureController.Outcome.DISABLED, "the main switch should turn off");
+		check(!controller.isActive(Feature.INSTANT_FLY), "no feature should act while the main switch is off");
+		check(config.isEnabled(Feature.INSTANT_FLY), "the main switch should leave the feature turned on");
+		check(controller.toggle().outcome() == FeatureController.Outcome.ENABLED, "the main switch should turn on again");
+		check(controller.isActive(Feature.INSTANT_FLY), "the feature should act again");
+	}
+
 	private static void checkMultiplayerRules(final Path directory) {
 		ElytraConfig config = ElytraConfig.load(directory.resolve("rules.json"));
 		FeatureController controller = new FeatureController(config);
 		Feature probe = Feature.ELYTRA_BOOST;
+		config.setEnabled(probe, true);
 
 		check(!controller.isActive(probe), "nothing should be active outside a world");
 		controller.onJoin(Scene.SINGLEPLAYER);
@@ -155,6 +181,43 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 
 		controller.onDisconnect();
 		check(!controller.isActive(probe), "nothing should be active after disconnecting");
+	}
+
+	/**
+	 * The reset rules restore the main switch on joining an allowed world. Restarting the game is not possible in a
+	 * game test, so this is also where "reset on game exit" is covered: a fresh controller stands for a game that has
+	 * just started.
+	 */
+	private static void checkResetRules(final Path directory) {
+		ElytraConfig config = ElytraConfig.load(directory.resolve("reset.json"));
+		config.setEnabled(Feature.INSTANT_FLY, true);
+		config.setResetOnGameExit(true);
+		config.setEnabled(false);
+
+		FeatureController controller = new FeatureController(config);
+		controller.onJoin(SERVER_A);
+		check(!config.isEnabled(), "a ruled-out server should not apply the game exit reset");
+		controller.onDisconnect();
+		controller.onJoin(Scene.SINGLEPLAYER);
+		check(config.isEnabled(), "the first allowed world after starting should restore the default");
+		controller.onDisconnect();
+		config.setEnabled(false);
+		controller.onJoin(Scene.SINGLEPLAYER);
+		check(!config.isEnabled(), "later worlds should keep the state without reset on world exit");
+		controller.onDisconnect();
+
+		config.setResetOnWorldExit(true);
+		controller.onJoin(Scene.SINGLEPLAYER);
+		check(config.isEnabled(), "reset on world exit should restore the singleplayer default");
+		controller.onDisconnect();
+
+		config.setMultiplayerMode(MultiplayerMode.WHITELIST);
+		config.setServers(List.of("a.example.com"));
+		config.setMultiplayerDefault(false);
+		controller.onJoin(SERVER_A);
+		check(!config.isEnabled(), "an allowed server should restore the server default");
+		check(config.isEnabled(Feature.INSTANT_FLY), "a reset should only change the main switch");
+		controller.onDisconnect();
 	}
 
 	private static void checkAddressMatching() {

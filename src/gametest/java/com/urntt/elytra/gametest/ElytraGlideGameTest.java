@@ -22,14 +22,15 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.client.KeyMapping;
 
 /**
- * Checks the features that start and stop glides, the toggle keys, and the settings screens in singleplayer. Each
- * check measures the vanilla behavior with the feature off and the changed behavior with it on, in the same setup.
+ * Checks the features that start and stop glides, the toggle keys, the main switch and its reset on world exit, and
+ * the settings screens in singleplayer. Each check measures the vanilla behavior with the feature off and the changed
+ * behavior with it on, in the same setup.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class ElytraGlideGameTest implements FabricClientGameTest {
 	private static final String ELYTRA = "minecraft:elytra";
 	/** Screenshots needed to show the whole settings list, and the mouse wheel steps between two of them. */
-	private static final int SETTINGS_PAGES = 6;
+	private static final int SETTINGS_PAGES = 8;
 	private static final int SCROLL_PER_PAGE = 9;
 
 	@Override
@@ -40,16 +41,29 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 
 			checkToggleKeys(context, lab);
 			checkInstantFly(context, lab);
+			checkMainSwitch(context, lab);
 			checkInstaStop(context, lab);
 			checkNoGliding(context, lab);
 			checkFakeElytra(context, lab);
 			checkGroundGlide(context, lab);
 			checkStopInWater(context, lab);
 			checkOpenSettingsKey(context);
+
+			// Leave this world with the main switch off to check the reset on world exit below.
+			configure(context, config -> {
+				config.setResetOnWorldExit(true);
+				config.setEnabled(false);
+			});
+		}
+
+		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+			singleplayer.getConnection().waitForChunksRender();
+			check(context.computeOnClient(client -> ElytraClient.config().isEnabled()),
+					"reset on world exit should restore the main switch's singleplayer default");
 		}
 		// Outside a world: closing a singleplayer world right after a pause screen can hang the test harness.
 		checkSettingsScreens(context);
-		onlyEnable(context, Feature.ELYTRA_BOOST, Feature.INSTA_STOP);
+		onlyEnable(context);
 	}
 
 	private static void checkToggleKeys(final ClientGameTestContext context, final FlightLab lab) {
@@ -95,6 +109,33 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 		LOGGER.info("Instant Fly started gliding {} ticks after the jump key, {} blocks above the ground", ticks, lab.height());
 		check(ticks >= 0, "Instant Fly should start gliding right after the jump");
 		lab.checkServerGliding(true, "the server should accept the glide Instant Fly started");
+	}
+
+	/**
+	 * With the main switch off, a feature that is turned on does nothing; the main switch's key turns it back on.
+	 */
+	private static void checkMainSwitch(final ClientGameTestContext context, final FlightLab lab) {
+		KeyMapping mainKey = bindKey(context, ElytraClient.TOGGLE_KEY_NAME, "key.keyboard.j");
+		onlyEnable(context, Feature.INSTANT_FLY);
+		lab.resetPlayer(0, 0);
+		lab.wear(ELYTRA);
+
+		context.getInput().pressKey(mainKey);
+		context.waitTick();
+		check(!context.computeOnClient(client -> ElytraClient.config().isEnabled()), "the key should turn the main switch off");
+		check(isEnabled(context, Feature.INSTANT_FLY), "the main switch should leave Instant Fly turned on");
+		check(!loadSavedConfig().isEnabled(), "the main switch's state should be saved");
+		context.takeScreenshot("elytra-main-switch-off");
+		lab.pressJump();
+		check(lab.holdsFor(15, client -> !client.player.isFallFlying()), "Instant Fly should not act with the main switch off");
+		context.waitFor(client -> client.player.onGround(), FlightLab.LONG_TIMEOUT);
+
+		context.getInput().pressKey(mainKey);
+		context.waitTick();
+		lab.pressJump();
+		check(lab.ticksUntil(5, client -> client.player.isFallFlying()) >= 0,
+				"Instant Fly should act again once the main switch is back on");
+		unbindKey(context, mainKey);
 	}
 
 	private static void checkInstaStop(final ClientGameTestContext context, final FlightLab lab) {
@@ -244,8 +285,6 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 			config.setMultiplayerMode(MultiplayerMode.WHITELIST);
 			config.setServers(List.of("mc.example.com", "192.168.1.5"));
 		});
-		// Keep the cursor away from the widgets so no tooltip covers them.
-		context.getInput().setCursorPos(0, 0);
 		takeSettingsScreenshots(context, "en_us");
 		switchLanguage(context, "zh_cn");
 		takeSettingsScreenshots(context, "zh_cn");
@@ -257,6 +296,11 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 		// Recipe toasts would cover the top right corner.
 		context.runOnClient(client -> client.gui.toastManager().clear());
 		context.setScreen(() -> new ElytraConfigScreen(null));
+		// Opening a screen centers the cursor. Move it to the left edge: still over the list, so the mouse wheel scrolls
+		// it, but beside the options, so no tooltip covers them.
+		double middle = context.computeOnClient(client -> client.getWindow().getScreenHeight() / 2.0);
+		context.getInput().setCursorPos(4, middle);
+		context.waitTick();
 		context.takeScreenshot("elytra-config-screen-1-" + language);
 		for (int page = 2; page <= SETTINGS_PAGES; page++) {
 			context.getInput().scroll(-SCROLL_PER_PAGE);

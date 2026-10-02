@@ -46,7 +46,7 @@ public final class ElytraFlightGameTest implements FabricClientGameTest {
 			checkElytraBoost(context, lab);
 			checkAutopilot(context, lab);
 		}
-		onlyEnable(context, Feature.ELYTRA_BOOST, Feature.INSTA_STOP);
+		onlyEnable(context);
 	}
 
 	/**

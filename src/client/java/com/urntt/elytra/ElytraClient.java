@@ -24,13 +24,19 @@ import net.minecraft.resources.Identifier;
 
 public final class ElytraClient implements ClientModInitializer {
 	public static final String MOD_ID = "elytra";
+	public static final String TOGGLE_KEY_NAME = "key.elytra.toggle";
 	public static final String BOOST_KEY_NAME = "key.elytra.boost";
 	public static final String INSTA_STOP_KEY_NAME = "key.elytra.insta_stop";
 	public static final String SWAP_KEY_NAME = "key.elytra.swap_chest";
 	public static final String OPEN_SETTINGS_KEY_NAME = "key.elytra.open_settings";
 
+	/** Translation key of the main switch's name, shared by the toggle message and the configuration screen. */
+	public static final String MAIN_SWITCH_NAME_KEY = "options.elytra.enabled";
+	public static final Component MAIN_SWITCH_NAME = Component.translatable(MAIN_SWITCH_NAME_KEY);
 	/** Action bar message shown when a key is pressed on a server the multiplayer rules rule out. */
 	public static final Component BLOCKED_MESSAGE = Component.translatable("message.elytra.blocked");
+	/** Action bar message shown when an action key is pressed while the main switch is off. */
+	public static final Component MAIN_SWITCH_OFF_MESSAGE = Component.translatable("message.elytra.main_switch_off");
 
 	private static ElytraConfig config;
 	private static FeatureController features;
@@ -51,6 +57,7 @@ public final class ElytraClient implements ClientModInitializer {
 		boost = new ElytraBoost(config);
 
 		KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "general"));
+		KeyMapping toggleKey = register(TOGGLE_KEY_NAME, category);
 		Map<Feature, KeyMapping> toggleKeys = new EnumMap<>(Feature.class);
 		for (Feature feature : Feature.values()) {
 			toggleKeys.put(feature, register(feature.toggleKeyName(), category));
@@ -70,9 +77,12 @@ public final class ElytraClient implements ClientModInitializer {
 				boost.tick();
 			}
 
+			while (toggleKey.consumeClick()) {
+				showToggleResult(client, MAIN_SWITCH_NAME, features.toggle(), false);
+			}
 			toggleKeys.forEach((feature, key) -> {
 				while (key.consumeClick()) {
-					toggle(client, feature);
+					showToggleResult(client, feature.displayName(), features.toggle(feature), true);
 				}
 			});
 			while (boostKey.consumeClick()) {
@@ -139,20 +149,28 @@ public final class ElytraClient implements ClientModInitializer {
 		return KeyMappingHelper.registerKeyMapping(new KeyMapping(name, InputConstants.UNKNOWN.getValue(), category));
 	}
 
-	private static void toggle(final Minecraft client, final Feature feature) {
-		FeatureController.ToggleResult result = features.toggle(feature);
+	/**
+	 * Shows the outcome of a toggle key on the action bar.
+	 *
+	 * @param feature whether a feature was toggled, rather than the main switch
+	 */
+	private static void showToggleResult(final Minecraft client, final Component name,
+			final FeatureController.ToggleResult result, final boolean feature) {
 		if (client.player == null) {
 			return;
 		}
 
 		Component message = switch (result.outcome()) {
-			case ENABLED -> CommonComponents.optionStatus(feature.displayName(), true);
-			case DISABLED -> CommonComponents.optionStatus(feature.displayName(), false);
+			case ENABLED -> CommonComponents.optionStatus(name, true);
+			case DISABLED -> CommonComponents.optionStatus(name, false);
 			case BLOCKED -> BLOCKED_MESSAGE;
 		};
 		if (!result.turnedOff().isEmpty()) {
 			Component turnedOff = ComponentUtils.formatList(result.turnedOff(), Feature::displayName);
 			message = Component.translatable("message.elytra.turned_off", message, turnedOff);
+		}
+		if (feature && result.outcome() == FeatureController.Outcome.ENABLED && !config.isEnabled()) {
+			message = Component.translatable("message.elytra.waiting_for_main_switch", message);
 		}
 		client.player.sendOverlayMessage(message);
 	}
@@ -167,9 +185,15 @@ public final class ElytraClient implements ClientModInitializer {
 		if (features.isActive(feature)) {
 			return true;
 		}
-		client.player.sendOverlayMessage(features.isAllowed()
-				? Component.translatable("message.elytra.feature_off", feature.displayName())
-				: BLOCKED_MESSAGE);
+		Component reason;
+		if (!features.isAllowed()) {
+			reason = BLOCKED_MESSAGE;
+		} else if (!config.isEnabled()) {
+			reason = MAIN_SWITCH_OFF_MESSAGE;
+		} else {
+			reason = Component.translatable("message.elytra.feature_off", feature.displayName());
+		}
+		client.player.sendOverlayMessage(reason);
 		return false;
 	}
 }

@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Chest Swap: put on an elytra from the inventory when trying to glide in a chestplate, optionally put the chestplate back afterwards, and swap between them with a key.
 - Elytra Boost: push the glide like a firework rocket with a key, using a client-side rocket with an adjustable duration.
 - Insta Stop: end the glide with a key.
+- All features are off by default.
+- Add a main switch that turns all features on or off at once, with its own toggle key binding, separate defaults for singleplayer worlds and allowed servers, and options to reset to the default on world exit or game exit.
 - Add a toggle key binding for each feature and an "Open elytra Settings" key binding, all unbound by default.
 - Add a configuration screen built from vanilla widgets, also available through Mod Menu, which is optional.
 - Add multiplayer modes (disabled, whitelist, blacklist) and a server list. The mod is disabled on multiplayer servers by default.
