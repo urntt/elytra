@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Instant Landing: stand up as soon as a glide touches the ground, instead of lying and sliding along the ground until the server reports the landing, which takes a round trip on a server. A glide started again before the server catches up goes on at once. Turning it on turns off Ground Glide, and the other way round.
+
+### Fixed
+
+- On a server, Instant Fly no longer breaks off the glide for a tick when you jump right on landing from a glide.
+
 ## [1.1.0+26.3] - 2026-10-03
 
 ### Added

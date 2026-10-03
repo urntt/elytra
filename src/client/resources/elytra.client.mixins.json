@@ -5,6 +5,7 @@
 	"client": [
 		"AvatarRendererMixin",
 		"ElytraAnimationStateMixin",
+		"EntityMixin",
 		"EntityInvoker",
 		"HumanoidMobRendererMixin",
 		"LivingEntityMixin",

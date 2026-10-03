@@ -13,8 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(Player.class)
 public abstract class PlayerMixin {
 	/**
-	 * Routes the local player's attempts to start gliding through No Gliding, Chest Swap, and Fake Elytra. The result
-	 * still decides whether the client asks the server to start the glide. Other players keep vanilla behavior.
+	 * Routes the local player's attempts to start gliding through No Gliding, Instant Landing, Chest Swap, and Fake
+	 * Elytra. The result still decides whether the client asks the server to start the glide. Other players keep
+	 * vanilla behavior.
 	 */
 	@WrapMethod(method = "tryToStartFallFlying")
 	private boolean elytra$tryToStartFallFlying(final Operation<Boolean> original) {

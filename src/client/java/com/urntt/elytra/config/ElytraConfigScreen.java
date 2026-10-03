@@ -58,8 +58,8 @@ public final class ElytraConfigScreen extends OptionsSubScreen {
 				toggle("options.elytra.reset_on_game_exit", config.resetOnGameExit(), config::setResetOnGameExit));
 
 		this.list.addHeader(Component.translatable("options.elytra.section.gliding"));
-		this.addFeatures(Feature.FAKE_ELYTRA, Feature.NO_GLIDING, Feature.GROUND_GLIDE, Feature.INSTANT_FLY,
-				Feature.STOP_IN_WATER, Feature.KEEP_POSE, Feature.INSTANT_STOP);
+		this.addFeatures(Feature.FAKE_ELYTRA, Feature.NO_GLIDING, Feature.GROUND_GLIDE, Feature.INSTANT_LANDING,
+				Feature.INSTANT_FLY, Feature.STOP_IN_WATER, Feature.KEEP_POSE, Feature.INSTANT_STOP);
 
 		this.list.addHeader(Component.translatable("options.elytra.section.flight_control"));
 		this.addFeatures(Feature.FULLY_CONTROLLED);

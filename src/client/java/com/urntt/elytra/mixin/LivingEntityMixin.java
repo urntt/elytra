@@ -21,12 +21,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin {
 	/**
-	 * Reports a client-side glide (Fake Elytra, Ground Glide) in addition to the server's fall flying flag, so the
-	 * glide physics, pose, camera, and sounds treat it as gliding.
+	 * Reports a client-side glide (Fake Elytra, Ground Glide) in addition to the server's fall flying flag, and hides
+	 * a server glide the player landed from with Instant Landing, so the glide physics, pose, camera, and sounds
+	 * follow the client's view of the glide.
 	 */
 	@ModifyReturnValue(method = "isFallFlying", at = @At("RETURN"))
-	private boolean elytra$addClientGlide(final boolean fallFlying) {
-		return fallFlying || (Object) this instanceof LocalPlayer player && ElytraClient.glide().isClientGliding(player);
+	private boolean elytra$followClientGlide(final boolean fallFlying) {
+		if ((Object) this instanceof LocalPlayer player) {
+			return ElytraClient.glide().isFallFlying(player, fallFlying);
+		}
+		return fallFlying;
 	}
 
 	/**
@@ -56,6 +60,16 @@ public abstract class LivingEntityMixin {
 			}
 		}
 		original.call(self, moverType, allowed);
+	}
+
+	/**
+	 * Lets Instant Landing end the glide on the client as soon as it touches the ground.
+	 */
+	@Inject(method = "travelFallFlying", at = @At("TAIL"))
+	private void elytra$onGlideMoved(final Vec3 input, final CallbackInfo ci) {
+		if ((Object) this instanceof LocalPlayer player) {
+			ElytraClient.glide().onGlideMoved(player);
+		}
 	}
 
 	/**

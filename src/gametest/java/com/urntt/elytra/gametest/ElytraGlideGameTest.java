@@ -44,7 +44,7 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 	/** How long the jump key is held in the repeated Instant Fly check. */
 	private static final int HOLD_JUMP_TICKS = 300;
 	/** Screenshots needed to show the whole settings list, and the mouse wheel steps between two of them. */
-	private static final int SETTINGS_PAGES = 8;
+	private static final int SETTINGS_PAGES = 9;
 	private static final int SCROLL_PER_PAGE = 9;
 
 	@Override

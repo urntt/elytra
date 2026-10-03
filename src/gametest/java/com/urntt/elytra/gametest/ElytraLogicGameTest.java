@@ -129,6 +129,9 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 		check(controller.toggle(Feature.NO_GLIDING).turnedOff().isEmpty(), "No Gliding contradicts nothing that is on");
 		check(controller.toggle(Feature.FAKE_ELYTRA).turnedOff().equals(List.of(Feature.NO_GLIDING)),
 				"Fake Elytra should turn No Gliding off");
+		check(controller.setEnabled(Feature.GROUND_GLIDE, true).isEmpty(), "Ground Glide contradicts nothing that is on");
+		check(controller.setEnabled(Feature.INSTANT_LANDING, true).equals(List.of(Feature.GROUND_GLIDE)),
+				"Instant Landing should turn Ground Glide off");
 		check(controller.setEnabled(Feature.FULLY_CONTROLLED, false).isEmpty(), "turning off should not affect others");
 		check(controller.isActive(Feature.FAKE_ELYTRA) && !controller.isActive(Feature.FULLY_CONTROLLED),
 				"the states should match what was set");

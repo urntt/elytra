@@ -29,6 +29,7 @@ Some features are worth knowing about in particular:
 | Fake Elytra | Off | Glide without wearing an elytra: press jump in the air as you would with one. |
 | No Gliding | Off | Never start gliding, even with an elytra on. |
 | Ground Glide | Off | Keep gliding when you touch the ground instead of landing. The glide ends once it comes to rest. |
+| Instant Landing | Off | Stand up as soon as a glide touches the ground. Vanilla waits for the server to report the landing, so on a server you keep lying and sliding along the ground for a round trip, longer the higher your ping. If you start gliding again before the server has caught up, you glide on at once. |
 | Instant Fly | Off | Pressing jump on the ground jumps and starts gliding right away, without a second press in the air. |
 | Stop Flying in Water | Off | Stop gliding when you enter water. |
 | Keep Pose While Gliding | Off | While gliding, keep the view height, hitbox, and animation you have when standing, instead of lying down. Where standing does not fit, you crouch or crawl as usual. Only your client changes: the server and other players still see you gliding. |
@@ -41,7 +42,7 @@ Some features are worth knowing about in particular:
 | Elytra Boost | Off | While gliding, the boost key pushes you like a firework rocket, without using one. The boost lasts 20 ticks (1 second) by default. |
 | Instant Stop | Off | The stop key ends your glide at once. |
 
-Fake Elytra and No Gliding contradict each other, and so do Fully Controlled Flying, Partially Controlled Flying, and Autopilot: turning one on turns the others in its group off.
+Fake Elytra and No Gliding contradict each other, and so do Ground Glide and Instant Landing, and Fully Controlled Flying, Partially Controlled Flying, and Autopilot: turning one on turns the others in its group off.
 
 All features are off by default.
 
@@ -54,6 +55,7 @@ The main switch, named **elytra** on the configuration screen, decides whether t
 - Glides start and stop with the same command the game sends when you press jump in the air. Instant Stop and Stop Flying in Water send it again while you glide, which the server answers by ending the glide.
 - Fake Elytra's glide exists only on your client. The server counts its descent as a fall, so landing from a fake glide can hurt.
 - When Ground Glide lifts you back into the air with an elytra on, the mod asks the server to glide again, so the server no longer counts the flight as falling.
+- Instant Landing changes only what your client shows: the server still ends the glide when it sees you on the ground, and the mod sends nothing for it. A glide you start before the server's end arrives is requested once it has arrived, because the same command sent earlier would only end the old glide. If the server missed the landing, which can happen when you leave the ground again right away, its glide simply goes on.
 - Elytra Boost's rocket exists only on your client and is removed after the boost.
 - Chest Swap and Elytra Replace move items with the same clicks you would make in your inventory, and only while no other container is open and nothing is on your cursor.
 
@@ -110,7 +112,7 @@ Build the mod:
 
 The jar is written to `build/libs/`.
 
-Run the client game tests, which start Minecraft and measure every feature against vanilla in singleplayer worlds and on a local dedicated server, along with the key bindings, the main switch and its reset rules, the multiplayer modes, and the saved configuration:
+Run the client game tests, which start Minecraft and measure every feature against vanilla in singleplayer worlds and on a local dedicated server, also over a connection with simulated latency, along with the key bindings, the main switch and its reset rules, the multiplayer modes, and the saved configuration:
 
 ```bash
 ./gradlew runClientGameTest

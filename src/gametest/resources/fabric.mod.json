@@ -10,7 +10,8 @@
 			"com.urntt.elytra.gametest.ElytraGlideGameTest",
 			"com.urntt.elytra.gametest.ElytraFlightGameTest",
 			"com.urntt.elytra.gametest.ElytraEquipmentGameTest",
-			"com.urntt.elytra.gametest.ElytraMultiplayerGameTest"
+			"com.urntt.elytra.gametest.ElytraMultiplayerGameTest",
+			"com.urntt.elytra.gametest.ElytraLatencyGameTest"
 		]
 	},
 	"depends": {

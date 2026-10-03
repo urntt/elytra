@@ -10,7 +10,8 @@ import net.minecraft.network.chat.Component;
 public enum Feature {
 	FAKE_ELYTRA("fake_elytra", Group.GLIDE_PERMISSION),
 	NO_GLIDING("no_gliding", Group.GLIDE_PERMISSION),
-	GROUND_GLIDE("ground_glide", null),
+	GROUND_GLIDE("ground_glide", Group.LANDING),
+	INSTANT_LANDING("instant_landing", Group.LANDING),
 	INSTANT_FLY("instant_fly", null),
 	STOP_IN_WATER("stop_in_water", null),
 	KEEP_POSE("keep_pose", null),
@@ -29,6 +30,8 @@ public enum Feature {
 	public enum Group {
 		/** Gliding without an elytra versus never gliding. */
 		GLIDE_PERMISSION,
+		/** Gliding on along the ground versus standing up the moment the glide touches it. */
+		LANDING,
 		/** Ways of steering a glide that replace or override each other. */
 		FLIGHT_CONTROL
 	}
