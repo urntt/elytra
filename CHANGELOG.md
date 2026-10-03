@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0+26.3] - 2026-10-03
+
 ### Added
 
 - Instant Landing: stand up as soon as a glide touches the ground, instead of lying and sliding along the ground until the server reports the landing, which takes a round trip on a server. A glide started again before the server catches up goes on at once. Turning it on turns off Ground Glide, and the other way round.
