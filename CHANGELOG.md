@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0+26.3] - 2026-10-03
+
 ### Added
 
 - Keep Pose While Gliding: glide with the view height, hitbox, and animation of a standing player. Only your client changes; the server and other players still see you gliding.
