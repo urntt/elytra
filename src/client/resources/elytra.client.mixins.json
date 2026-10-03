@@ -3,9 +3,13 @@
 	"package": "com.urntt.elytra.mixin",
 	"compatibilityLevel": "JAVA_${java_version}",
 	"client": [
+		"AvatarRendererMixin",
+		"ElytraAnimationStateMixin",
 		"EntityInvoker",
+		"HumanoidMobRendererMixin",
 		"LivingEntityMixin",
 		"LocalPlayerMixin",
+		"PlayerInvoker",
 		"PlayerMixin"
 	],
 	"injectors": {

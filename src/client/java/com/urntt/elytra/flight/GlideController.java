@@ -8,6 +8,7 @@ import java.util.function.BooleanSupplier;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +33,8 @@ public final class GlideController {
 	private final ElytraEquipment equipment;
 	private @Nullable LocalPlayer player;
 	private boolean clientGliding;
-	private boolean jumped;
+	/** Set by a jump off the ground; Instant Fly starts a glide as soon as it can while this jump lasts. */
+	private boolean instantFlyPending;
 	private int resyncCooldown;
 
 	public GlideController(final FeatureController features, final ElytraEquipment equipment) {
@@ -45,6 +47,14 @@ public final class GlideController {
 	 */
 	public boolean isClientGliding(final LocalPlayer player) {
 		return this.clientGliding && this.player == player;
+	}
+
+	/**
+	 * Returns whether {@code entity} is the local player and keeps the view height, hitbox, and animation of standing
+	 * while it glides (Keep Pose While Gliding). Glides of every other entity look vanilla.
+	 */
+	public boolean keepsPose(final Entity entity) {
+		return entity instanceof LocalPlayer && this.features.isActive(Feature.KEEP_POSE);
 	}
 
 	/**
@@ -78,11 +88,11 @@ public final class GlideController {
 	}
 
 	/**
-	 * Called when the local player jumps off the ground, so Instant Fly can start the glide at the end of this tick.
+	 * Called when the local player jumps off the ground, so Instant Fly can start a glide from this jump.
 	 */
 	public void onJump(final LocalPlayer player) {
 		this.bind(player);
-		this.jumped = true;
+		this.instantFlyPending = true;
 	}
 
 	/**
@@ -117,12 +127,7 @@ public final class GlideController {
 			this.stopGliding(player);
 		}
 
-		// The jump's position update was sent this tick, so the server already sees the player off the ground.
-		if (this.jumped && this.features.isActive(Feature.INSTANT_FLY) && !player.onGround() && !player.isFallFlying()
-				&& !player.onClimbable() && player.tryToStartFallFlying()) {
-			sendStartFallFlying(player);
-		}
-		this.jumped = false;
+		this.tickInstantFly(player);
 
 		// With a usable elytra, hand a client-side glide back to the server once the player is in the air again, so the
 		// server treats the flight as gliding (no fall damage, elytra durability) instead of as falling.
@@ -133,6 +138,29 @@ public final class GlideController {
 				&& ElytraEquipment.hasUsableGlider(player)) {
 			sendStartFallFlying(player);
 			this.resyncCooldown = RESYNC_INTERVAL_TICKS;
+		}
+	}
+
+	/**
+	 * Starts a glide for a pending jump. The jump's position update was sent this tick, so the server already sees the
+	 * player off the ground.
+	 *
+	 * <p>A jump on landing from a glide happens before the server's end of that glide reaches the client, so the
+	 * player still counts as gliding then. Sending the command at that point would only end the old glide, so the jump
+	 * stays pending until the server's update arrives, and a new glide starts right after. The pending jump ends when
+	 * the player is back on the ground.
+	 */
+	private void tickInstantFly(final LocalPlayer player) {
+		if (!this.instantFlyPending) {
+			return;
+		}
+		if (!this.features.isActive(Feature.INSTANT_FLY) || player.onGround() || player.onClimbable()) {
+			this.instantFlyPending = false;
+		} else if (!player.isFallFlying()) {
+			this.instantFlyPending = false;
+			if (player.tryToStartFallFlying()) {
+				sendStartFallFlying(player);
+			}
 		}
 	}
 
@@ -164,7 +192,7 @@ public final class GlideController {
 		if (this.player != player) {
 			this.player = player;
 			this.clientGliding = false;
-			this.jumped = false;
+			this.instantFlyPending = false;
 			this.resyncCooldown = 0;
 		}
 	}

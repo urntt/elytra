@@ -59,7 +59,7 @@ public final class ElytraConfigScreen extends OptionsSubScreen {
 
 		this.list.addHeader(Component.translatable("options.elytra.section.gliding"));
 		this.addFeatures(Feature.FAKE_ELYTRA, Feature.NO_GLIDING, Feature.GROUND_GLIDE, Feature.INSTANT_FLY,
-				Feature.STOP_IN_WATER, Feature.INSTA_STOP);
+				Feature.STOP_IN_WATER, Feature.KEEP_POSE, Feature.INSTANT_STOP);
 
 		this.list.addHeader(Component.translatable("options.elytra.section.flight_control"));
 		this.addFeatures(Feature.FULLY_CONTROLLED);

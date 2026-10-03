@@ -13,6 +13,7 @@ public enum Feature {
 	GROUND_GLIDE("ground_glide", null),
 	INSTANT_FLY("instant_fly", null),
 	STOP_IN_WATER("stop_in_water", null),
+	KEEP_POSE("keep_pose", null),
 	FULLY_CONTROLLED("fully_controlled", Group.FLIGHT_CONTROL),
 	PARTIALLY_CONTROLLED("partially_controlled", Group.FLIGHT_CONTROL),
 	NO_CRASH("no_crash", null),
@@ -20,7 +21,7 @@ public enum Feature {
 	ELYTRA_REPLACE("elytra_replace", null),
 	CHEST_SWAP("chest_swap", null),
 	ELYTRA_BOOST("elytra_boost", null),
-	INSTA_STOP("insta_stop", null);
+	INSTANT_STOP("instant_stop", null);
 
 	/**
 	 * Features that contradict each other. Turning one on turns the others in its group off.

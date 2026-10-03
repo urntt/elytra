@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Keep Pose While Gliding: glide with the view height, hitbox, and animation of a standing player. Only your client changes; the server and other players still see you gliding.
+
+### Changed
+
+- Rename Insta Stop to Instant Stop. Its saved on/off state carries over, but its toggle key and its stop key have new names, so bind them again.
+
+### Fixed
+
+- Instant Fly now also glides from a jump made right on landing from a glide, so holding jump glides from every jump instead of every other one.
+
 ## [1.0.0+26.3] - 2026-10-02
 
 ### Added

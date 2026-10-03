@@ -31,6 +31,7 @@ Some features are worth knowing about in particular:
 | Ground Glide | Off | Keep gliding when you touch the ground instead of landing. The glide ends once it comes to rest. |
 | Instant Fly | Off | Pressing jump on the ground jumps and starts gliding right away, without a second press in the air. |
 | Stop Flying in Water | Off | Stop gliding when you enter water. |
+| Keep Pose While Gliding | Off | While gliding, keep the view height, hitbox, and animation you have when standing, instead of lying down. Where standing does not fit, you crouch or crawl as usual. Only your client changes: the server and other players still see you gliding. |
 | Fully Controlled Flying | Off | Fly only as the keys say: movement keys move you horizontally, jump and sneak move you up and down, and with no key held you hover in place. The horizontal and vertical speeds are adjustable. |
 | Partially Controlled Flying | Off | Keep vanilla gliding, but forward speeds you up along your facing, back slows you down, jump pushes you up, and sneak pushes you down. The amounts, the natural descent, the natural acceleration, and a maximum speed are adjustable. |
 | No Crash | Off | Looks ahead along your velocity and slows you down before you fly into a wall or into a chunk that has not loaded yet, stopping just in front of it. Floors do not count, so you can still land. |
@@ -38,7 +39,7 @@ Some features are worth knowing about in particular:
 | Elytra Replace | Off | Swaps in a spare elytra from your inventory when the worn one has the minimum durability (1 by default) or less left. An elytra with 1 durability left can no longer glide, so with the default your glide ends just before the swap; set the minimum to 2 or more to swap without interrupting the glide. |
 | Chest Swap | Off | When you try to glide in a chestplate with an elytra in your inventory, puts the elytra on and starts the glide. Puts the chestplate back on when that glide ends. Both steps can be turned off. Also enables the swap key. |
 | Elytra Boost | Off | While gliding, the boost key pushes you like a firework rocket, without using one. The boost lasts 20 ticks (1 second) by default. |
-| Insta Stop | Off | The stop key ends your glide at once. |
+| Instant Stop | Off | The stop key ends your glide at once. |
 
 Fake Elytra and No Gliding contradict each other, and so do Fully Controlled Flying, Partially Controlled Flying, and Autopilot: turning one on turns the others in its group off.
 
@@ -50,7 +51,7 @@ The main switch, named **elytra** on the configuration screen, decides whether t
 
 ### How the features work with the server
 
-- Glides start and stop with the same command the game sends when you press jump in the air. Insta Stop and Stop Flying in Water send it again while you glide, which the server answers by ending the glide.
+- Glides start and stop with the same command the game sends when you press jump in the air. Instant Stop and Stop Flying in Water send it again while you glide, which the server answers by ending the glide.
 - Fake Elytra's glide exists only on your client. The server counts its descent as a fall, so landing from a fake glide can hurt.
 - When Ground Glide lifts you back into the air with an elytra on, the mod asks the server to glide again, so the server no longer counts the flight as falling.
 - Elytra Boost's rocket exists only on your client and is removed after the boost.
@@ -63,7 +64,7 @@ The mod adds these key bindings in **Options → Controls → Key Binds**, all u
 - **Toggle elytra** turns the main switch on or off and shows the new state on the action bar.
 - **Toggle &lt;feature&gt;** for each feature turns it on or off and shows the new state on the action bar. If the main switch is off, the message says so.
 - On a server that the multiplayer settings rule out, all toggle keys only show that the mod is disabled there.
-- **Elytra Boost**, **Insta Stop**, and **Swap Elytra and Chestplate** perform those actions while their features are on.
+- **Elytra Boost**, **Instant Stop**, and **Swap Elytra and Chestplate** perform those actions while their features are on.
 - **Open elytra Settings** opens the configuration screen. With Mod Menu installed, you can also open it from the mod list.
 
 ### Settings

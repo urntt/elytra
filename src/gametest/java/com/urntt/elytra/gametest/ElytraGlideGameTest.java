@@ -14,21 +14,35 @@ import com.urntt.elytra.Feature;
 import com.urntt.elytra.config.ElytraConfigScreen;
 import com.urntt.elytra.config.MultiplayerMode;
 import com.urntt.elytra.config.ServerListScreen;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.Camera;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.Pose;
 
 /**
- * Checks the features that start and stop glides, the toggle keys, the main switch and its reset on world exit, and
- * the settings screens in singleplayer. Each check measures the vanilla behavior with the feature off and the changed
+ * Checks the features that start and stop glides, Keep Pose While Gliding, the toggle keys, the main switch and its
+ * reset on world exit, and the settings screens in singleplayer. Each check measures the vanilla behavior with the feature off and the changed
  * behavior with it on, in the same setup.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class ElytraGlideGameTest implements FabricClientGameTest {
 	private static final String ELYTRA = "minecraft:elytra";
+	/** How close, in blocks, the camera must stay to the standing eye height. A dip toward gliding is about 0.6. */
+	private static final float CAMERA_TOLERANCE = 0.01F;
+	/** How long the jump key is held in the repeated Instant Fly check. */
+	private static final int HOLD_JUMP_TICKS = 300;
 	/** Screenshots needed to show the whole settings list, and the mouse wheel steps between two of them. */
 	private static final int SETTINGS_PAGES = 8;
 	private static final int SCROLL_PER_PAGE = 9;
@@ -41,12 +55,14 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 
 			checkToggleKeys(context, lab);
 			checkInstantFly(context, lab);
+			checkInstantFlyHoldingJump(context, lab);
 			checkMainSwitch(context, lab);
-			checkInstaStop(context, lab);
+			checkInstantStop(context, lab);
 			checkNoGliding(context, lab);
 			checkFakeElytra(context, lab);
 			checkGroundGlide(context, lab);
 			checkStopInWater(context, lab);
+			checkKeepPose(context, lab);
 			checkOpenSettingsKey(context);
 
 			// Leave this world with the main switch off to check the reset on world exit below.
@@ -138,21 +154,56 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 		unbindKey(context, mainKey);
 	}
 
-	private static void checkInstaStop(final ClientGameTestContext context, final FlightLab lab) {
-		KeyMapping stopKey = bindKey(context, ElytraClient.INSTA_STOP_KEY_NAME, "key.keyboard.j");
+	/**
+	 * Holding jump and forward with Instant Fly (and Ground Glide off) should glide from every jump, including the jumps
+	 * made right on landing from a glide, before the server's end of that glide has reached the client.
+	 */
+	private static void checkInstantFlyHoldingJump(final ClientGameTestContext context, final FlightLab lab) {
+		onlyEnable(context, Feature.INSTANT_FLY);
+		lab.resetPlayer(0, 0);
+		lab.wear(ELYTRA);
+		context.getInput().holdKey(options -> options.keyJump);
+		context.getInput().holdKey(options -> options.keyUp);
+
+		// For each time in the air, whether the player glided at some point.
+		List<Boolean> glides = new ArrayList<>();
+		boolean wasOnGround = true;
+		boolean glided = false;
+		for (int tick = 0; tick < HOLD_JUMP_TICKS; tick++) {
+			context.waitTick();
+			boolean onGround = lab.client(client -> client.player.onGround());
+			if (!onGround) {
+				glided = (!wasOnGround && glided) || lab.client(client -> client.player.isFallFlying());
+			} else if (!wasOnGround) {
+				glides.add(glided);
+			}
+			wasOnGround = onGround;
+		}
+		context.getInput().releaseKey(options -> options.keyJump);
+		context.getInput().releaseKey(options -> options.keyUp);
+		context.waitFor(client -> client.player.onGround() && !client.player.isFallFlying(), FlightLab.LONG_TIMEOUT);
+
+		LOGGER.info("Holding jump with Instant Fly for {} ticks: {} jumps, glided in each: {}", HOLD_JUMP_TICKS,
+				glides.size(), glides);
+		check(glides.size() >= 4, "holding jump should keep jumping, got " + glides.size() + " jumps");
+		check(!glides.contains(false), "every jump should glide, got " + glides);
+	}
+
+	private static void checkInstantStop(final ClientGameTestContext context, final FlightLab lab) {
+		KeyMapping stopKey = bindKey(context, ElytraClient.INSTANT_STOP_KEY_NAME, "key.keyboard.j");
 		onlyEnable(context);
 		lab.resetPlayer(0, 0);
 		lab.wear(ELYTRA);
 		lab.launchGlide(0, 60, 0, 0.0F, 0.0F);
 		context.getInput().pressKey(stopKey);
-		check(lab.holdsFor(5, client -> client.player.isFallFlying()), "the stop key should do nothing with Insta Stop off");
-		context.takeScreenshot("elytra-insta-stop-off");
+		check(lab.holdsFor(5, client -> client.player.isFallFlying()), "the stop key should do nothing with Instant Stop off");
+		context.takeScreenshot("elytra-instant-stop-off");
 
-		onlyEnable(context, Feature.INSTA_STOP);
+		onlyEnable(context, Feature.INSTANT_STOP);
 		context.getInput().pressKey(stopKey);
 		int ticks = lab.ticksUntil(2, client -> !client.player.isFallFlying());
-		LOGGER.info("Insta Stop ended the glide after {} ticks", ticks);
-		check(ticks >= 0, "Insta Stop should end the glide at once");
+		LOGGER.info("Instant Stop ended the glide after {} ticks", ticks);
+		check(ticks >= 0, "Instant Stop should end the glide at once");
 		lab.checkServerGliding(false, "the server should end the glide too");
 		check(lab.holdsFor(10, client -> !client.player.isFallFlying()), "the glide should stay ended");
 		unbindKey(context, stopKey);
@@ -266,6 +317,87 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 		}
 	}
 
+	/**
+	 * A vanilla glide lies down: a low hitbox, low eyes, the gliding animation, and spread wings. Keep Pose While
+	 * Gliding keeps the standing pose, hitbox, eye height, and animation, while the glide itself goes on.
+	 */
+	private static void checkKeepPose(final ClientGameTestContext context, final FlightLab lab) {
+		for (boolean enabled : new boolean[] {false, true}) {
+			if (enabled) {
+				onlyEnable(context, Feature.KEEP_POSE);
+			} else {
+				onlyEnable(context);
+			}
+			lab.resetPlayer(0, 0);
+			lab.wear(ELYTRA);
+			// The camera follows the eye height smoothly; let it settle after the previous glide.
+			float standingEyeHeight = lab.client(client -> client.player.getDimensions(Pose.STANDING).eyeHeight());
+			context.waitFor(client -> Math.abs(cameraEyeHeight(client) - standingEyeHeight) < CAMERA_TOLERANCE,
+					FlightLab.LONG_TIMEOUT);
+			lab.launchGlide(0, 60, 0, 0.0F, 0.0F);
+			// Long enough for the server's pose update to arrive and for the wings to settle.
+			int lyingTicks = 0;
+			float lowestCamera = Float.MAX_VALUE;
+			for (int tick = 0; tick < 20; tick++) {
+				context.waitTick();
+				if (lab.client(client -> client.player.getPose() == Pose.FALL_FLYING)) {
+					lyingTicks++;
+				}
+				lowestCamera = Math.min(lowestCamera, lab.client(ElytraGlideGameTest::cameraEyeHeight));
+			}
+			PoseSample sample = lab.client(client -> {
+				EntityRenderer<? super LocalPlayer, ?> renderer = client.getEntityRenderDispatcher().getRenderer(client.player);
+				HumanoidRenderState state = (HumanoidRenderState) renderer.createRenderState(client.player, 1.0F);
+				return new PoseSample(client.player.isFallFlying(), client.player.getPose(),
+						client.player.getBbHeight(), client.player.getEyeHeight(), state.isFallFlying, state.elytraRotZ);
+			});
+			EntityDimensions standing = lab.client(client -> client.player.getDimensions(Pose.STANDING));
+			EntityDimensions lying = lab.client(client -> client.player.getDimensions(Pose.FALL_FLYING));
+			LOGGER.info("Gliding with Keep Pose While Gliding {}: {}, lying down in {} of 20 ticks, lowest camera height {}",
+					enabled ? "on" : "off", sample, lyingTicks, lowestCamera);
+
+			context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+			context.waitTicks(2);
+			context.takeScreenshot("elytra-keep-pose-" + (enabled ? "on" : "off"));
+			context.runOnClient(client -> client.options.setCameraType(CameraType.FIRST_PERSON));
+
+			check(sample.gliding(), "the player should glide either way");
+			if (enabled) {
+				check(lyingTicks == 0 && sample.pose() == Pose.STANDING, "the player should keep standing while gliding");
+				check(sample.height() == standing.height() && sample.eyeHeight() == standing.eyeHeight(),
+						"the hitbox and the eyes should stay at standing height");
+				check(lowestCamera > standing.eyeHeight() - CAMERA_TOLERANCE,
+						"the camera should never dip toward the gliding height");
+				// The folded elytra rests at -PI/12; gliding spreads it toward -PI/2.
+				check(!sample.renderedGliding() && sample.wingRotZ() > -Math.PI / 6,
+						"the body and the elytra should be drawn as when not gliding");
+			} else {
+				check(sample.pose() == Pose.FALL_FLYING && sample.height() == lying.height()
+								&& sample.eyeHeight() == lying.eyeHeight(),
+						"a vanilla glide should lie down with a low hitbox and low eyes");
+				check(sample.renderedGliding() && sample.wingRotZ() < -Math.PI / 4,
+						"a vanilla glide should be drawn gliding with spread wings");
+			}
+		}
+	}
+
+	/**
+	 * Returns the camera's height above the player's feet, which follows the eye height with some smoothing.
+	 */
+	private static float cameraEyeHeight(final Minecraft client) {
+		try {
+			Field eyeHeight = Camera.class.getDeclaredField("eyeHeight");
+			eyeHeight.setAccessible(true);
+			return eyeHeight.getFloat(client.gameRenderer.mainCamera());
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException("cannot read the camera's eye height", e);
+		}
+	}
+
+	private record PoseSample(boolean gliding, Pose pose, float height, float eyeHeight, boolean renderedGliding,
+			float wingRotZ) {
+	}
+
 	private static void checkOpenSettingsKey(final ClientGameTestContext context) {
 		KeyMapping openSettingsKey = bindKey(context, ElytraClient.OPEN_SETTINGS_KEY_NAME, "key.keyboard.k");
 		context.getInput().pressKey(openSettingsKey);
@@ -280,7 +412,7 @@ public final class ElytraGlideGameTest implements FabricClientGameTest {
 	 * Takes screenshots of both settings screens in English and in Simplified Chinese.
 	 */
 	private static void checkSettingsScreens(final ClientGameTestContext context) {
-		onlyEnable(context, Feature.PARTIALLY_CONTROLLED, Feature.ELYTRA_BOOST, Feature.INSTA_STOP);
+		onlyEnable(context, Feature.PARTIALLY_CONTROLLED, Feature.ELYTRA_BOOST, Feature.INSTANT_STOP);
 		configure(context, config -> {
 			config.setMultiplayerMode(MultiplayerMode.WHITELIST);
 			config.setServers(List.of("mc.example.com", "192.168.1.5"));

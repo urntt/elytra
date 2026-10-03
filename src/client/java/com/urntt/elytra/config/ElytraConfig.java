@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 public final class ElytraConfig {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ElytraClient.MOD_ID);
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	/** Feature ids that were renamed, mapped to their current ids, so saved states carry over. */
+	private static final Map<String, String> RENAMED_FEATURES = Map.of("insta_stop", Feature.INSTANT_STOP.id());
 
 	private final Path path;
 	private final Settings settings;
@@ -211,13 +213,22 @@ public final class ElytraConfig {
 		private List<String> servers = new ArrayList<>();
 
 		/**
-		 * Fills in missing values, drops unknown keys, keeps only the first of several contradicting features turned
-		 * on, rounds numbers to the values the settings accept, and tidies the server list.
+		 * Fills in missing values, carries over renamed features, drops unknown keys, keeps only the first of several
+		 * contradicting features turned on, rounds numbers to the values the settings accept, and tidies the server list.
 		 */
 		private void normalize() {
+			Map<String, Boolean> saved = new LinkedHashMap<>();
+			if (this.features != null) {
+				RENAMED_FEATURES.forEach((oldId, newId) -> {
+					if (this.features.containsKey(oldId) && !this.features.containsKey(newId)) {
+						saved.put(newId, this.features.get(oldId));
+					}
+				});
+				saved.putAll(this.features);
+			}
 			Map<String, Boolean> features = new LinkedHashMap<>();
 			for (Feature feature : Feature.values()) {
-				Boolean enabled = this.features != null ? this.features.get(feature.id()) : null;
+				Boolean enabled = saved.get(feature.id());
 				boolean contradicted = Arrays.stream(Feature.values())
 						.anyMatch(other -> other.conflictsWith(feature) && Boolean.TRUE.equals(features.get(other.id())));
 				features.put(feature.id(), Boolean.TRUE.equals(enabled) && !contradicted);

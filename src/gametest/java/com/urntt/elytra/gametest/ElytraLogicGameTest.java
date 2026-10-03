@@ -84,7 +84,8 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 				"of two contradicting features only the first should stay on");
 		check(config.isEnabled(Feature.FULLY_CONTROLLED) && !config.isEnabled(Feature.AUTOPILOT),
 				"of two flight controls only the first should stay on");
-		check(config.isEnabled(Feature.INSTA_STOP) && !config.isEnabled(), "saved settings should be kept");
+		check(!config.isEnabled(), "saved settings should be kept");
+		check(config.isEnabled(Feature.INSTANT_STOP), "Insta Stop's saved state should carry over to Instant Stop");
 		check(!config.isEnabled(Feature.ELYTRA_BOOST), "missing features should be off");
 		check(config.get(Tuning.FULLY_CONTROLLED_HORIZONTAL_SPEED) == 5.0, "values above the range should be clamped");
 		check(config.get(Tuning.PARTIALLY_CONTROLLED_ASCEND_ACCELERATION) == 0.08, "values should be rounded to a step");
@@ -92,7 +93,8 @@ public final class ElytraLogicGameTest implements FabricClientGameTest {
 		check(config.multiplayerMode() == MultiplayerMode.DISABLED, "an unknown mode should fall back to disabled");
 		check(config.servers().equals(List.of("a.example.com")), "entries should be trimmed and blanks dropped");
 		String saved = read(path);
-		check(!saved.contains("removed_feature"), "unknown features should be dropped from the file");
+		check(!saved.contains("removed_feature") && !saved.contains("insta_stop"),
+				"unknown and renamed features should be dropped from the file");
 		check(saved.contains("\"chestSwapBack\"") && saved.contains("\"resetOnGameExit\"")
 						&& saved.contains("\"elytra_replace.min_durability\""),
 				"missing settings should be written to the file");

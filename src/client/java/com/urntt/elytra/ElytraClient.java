@@ -26,7 +26,7 @@ public final class ElytraClient implements ClientModInitializer {
 	public static final String MOD_ID = "elytra";
 	public static final String TOGGLE_KEY_NAME = "key.elytra.toggle";
 	public static final String BOOST_KEY_NAME = "key.elytra.boost";
-	public static final String INSTA_STOP_KEY_NAME = "key.elytra.insta_stop";
+	public static final String INSTANT_STOP_KEY_NAME = "key.elytra.instant_stop";
 	public static final String SWAP_KEY_NAME = "key.elytra.swap_chest";
 	public static final String OPEN_SETTINGS_KEY_NAME = "key.elytra.open_settings";
 
@@ -63,7 +63,7 @@ public final class ElytraClient implements ClientModInitializer {
 			toggleKeys.put(feature, register(feature.toggleKeyName(), category));
 		}
 		KeyMapping boostKey = register(BOOST_KEY_NAME, category);
-		KeyMapping instaStopKey = register(INSTA_STOP_KEY_NAME, category);
+		KeyMapping instantStopKey = register(INSTANT_STOP_KEY_NAME, category);
 		KeyMapping swapKey = register(SWAP_KEY_NAME, category);
 		KeyMapping openSettingsKey = register(OPEN_SETTINGS_KEY_NAME, category);
 
@@ -90,8 +90,8 @@ public final class ElytraClient implements ClientModInitializer {
 					boost.launch(client.player);
 				}
 			}
-			while (instaStopKey.consumeClick()) {
-				if (checkActive(client, Feature.INSTA_STOP) && client.player.isFallFlying()) {
+			while (instantStopKey.consumeClick()) {
+				if (checkActive(client, Feature.INSTANT_STOP) && client.player.isFallFlying()) {
 					glide.stopGliding(client.player);
 				}
 			}
